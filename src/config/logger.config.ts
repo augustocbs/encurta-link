@@ -1,4 +1,4 @@
-import { WinstonModuleOptions } from 'nest-winston'; 
+import { WinstonModuleOptions } from 'nest-winston';
 import * as winston from 'winston';
 
 export const winstonConfig: WinstonModuleOptions = {
