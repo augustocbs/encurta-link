@@ -1,35 +1,22 @@
-# Estágio de build
-FROM node:20-alpine AS builder
+# Dockerfile
 
-# Define o diretório de trabalho dentro do container
+# Use uma imagem base do Node.js
+FROM node:20-alpine
+
+# Defina o diretório de trabalho no contêiner
 WORKDIR /app
 
-# Copia os arquivos package.json e package-lock.json para instalar as dependências
+# Copie os arquivos de dependência
 COPY package*.json ./
 
-# Instala as dependências do projeto
+# Instale as dependências da aplicação
 RUN npm install
 
-# Copia todo o código da aplicação para o diretório de trabalho
+# Copie o restante do código-fonte da aplicação
 COPY . .
 
-# Compila o TypeScript para JavaScript
-RUN npm run build 
-
-# Estágio de produção
-FROM node:20-alpine AS production
-
-WORKDIR /app
-
-# Copia apenas os arquivos necessários do estágio de build
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-
-# Copia o package.json para o comando start
-COPY package.json ./package.json 
-
-# Expõe a porta em que a aplicação irá rodar
+# Exponha a porta que a aplicação usa
 EXPOSE 3000
 
-# Inicia a aplicação compilada
-CMD ["node", "dist/main"] 
+# O comando padrão (será sobrescrito pelo docker-compose em desenvolvimento)
+CMD [ "npm", "run", "start:prod" ]

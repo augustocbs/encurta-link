@@ -5,6 +5,7 @@ services:
     build: .
     ports:
       - "3000:3000"
+    command: npm run start:dev
     environment:
       DB_HOST: db 
       DB_PORT: ${DB_PORT}
@@ -23,11 +24,12 @@ services:
     image: mysql:8.0
     ports:
       - "3306:3306"
+    command: --innodb-default-row-format=dynamic
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
 
