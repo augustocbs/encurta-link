@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+    - "3000:3000"
+    command: npm run start:dev
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    environment:
+      DB_HOST: db 
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      BASE_URL: ${BASE_URL}
+      NODE_ENV: development 
+    depends_on:
+    - db
+    volumes:
+    - .:/app
+    - /app/node_modules 
+
+  db:
+    image: mysql:8.0
+    ports:
+    - "3306:3306"
+    command: --innodb-default-row-format=dynamic
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+    - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
