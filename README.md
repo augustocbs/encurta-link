@@ -1,98 +1,101 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Encurtador de URL (Release 0.1.0)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este projeto é um serviço de encurtamento de URLs construído com NestJS, TypeScript e TypeORM, utilizando MySQL como banco de dados. A aplicação é conteinerizada com Docker e Docker Compose.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Funcionalidades da Release 0.1.0
 
-## Description
+*   Encurtar URLs longas, gerando um código curto único.
+*   Redirecionar usuários do código curto para a URL original.
+*   Contabilização básica de cliques.
+*   Validação de entrada para URLs.
+*   Testes unitários para a lógica de negócio.
+*   Documentação da API com Swagger (OpenAPI).
+*   Logs estruturados para observabilidade básica.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Tecnologias Utilizadas
 
-## Project setup
+*   **Backend:** Node.js, NestJS, TypeScript
+*   **ORM:** TypeORM
+*   **Banco de Dados:** MySQL
+*   **Conteinerização:** Docker, Docker Compose
+*   **Testes:** Jest
+*   **Documentação API:** Swagger (OpenAPI)
+*   **Logs:** Winston
+
+## Como Rodar o Projeto
+
+### Pré-requisitos
+
+*   Docker Desktop (ou Docker Engine e Docker Compose) instalado.
+*   Node.js (versão 20 ou superior, recomendado usar `nvm`).
+
+### Configuração
+
+1.  **Clone o repositório:**
+    ```bash
+    git clone https://github.com/augustocbs/encurta-link
+    cd encurta-link
+    ```
+
+2.  **Crie o arquivo de variáveis de ambiente:**
+    Na raiz do projeto, crie um arquivo `.env` e preencha com suas credenciais do MySQL e a URL base da aplicação:
+    O projeto já possui um .env.example com informações padrão para ser utilizado.
+    ```bash
+    cp .env.example .env
+    ```
+    **Importante:** O `DB_HOST` deve ser `db` quando rodando com Docker Compose, pois `db` é o nome do serviço do MySQL no `docker-compose.yml`.
+
+### Executando a Aplicação
+
+1.  **Inicie os containers Docker:**
+    Na raiz do projeto, execute:
+    ```bash
+    docker compose up --build -d
+    ```
+    Este comando irá construir a imagem da sua aplicação NestJS, iniciar o container do MySQL e o container da sua aplicação.
+
+2.  **Verifique os logs (opcional):**
+    Para ver se a aplicação iniciou corretamente e se o banco de dados foi sincronizado:
+    ```bash
+    docker compose logs app
+    ```
+
+### Usando a API
+
+A API estará disponível em `http://localhost:3000`.
+
+*   **Documentação Swagger:** Acesse `http://localhost:3000/api` para ver a documentação interativa da API.
+
+*   **Encurtar URL:**
+    `POST /shorten`
+    **Corpo da Requisição (JSON):**
+    ```json
+    {
+      "originalUrl": "https://www.example.com/sua/longa/url/aqui"
+    }
+    ```
+    **Exemplo com `curl`:**
+    ```bash
+    curl -X POST -H "Content-Type: application/json" \
+         -d '{"originalUrl": "https://www.google.com"}' \
+         http://localhost:3000/shorten
+    ```
+
+*   **Redirecionar URL:**
+    `GET /:shortCode`
+    **Exemplo no navegador:**
+    Se o `shorten` retornar `http://localhost:3000/aBcDeF`, acesse `http://localhost:3000/aBcDeF` no seu navegador.
+
+## Executando Testes
+
+Para rodar os testes unitários:
 
 ```bash
-$ npm install
+docker compose exec app npm run test
 ```
 
-## Compile and run the project
+Ou, se você tiver as dependências instaladas localmente (fora do container):
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run test
 ```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
