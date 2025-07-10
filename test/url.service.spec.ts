@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UrlService } from './url.service';
+import { UrlService } from '../src/url/url.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Url } from './entities/url.entity';
+import { Url } from '../src/url/entities/url.entity';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 
