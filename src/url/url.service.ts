@@ -2,36 +2,33 @@ import { Injectable, ConflictException, NotFoundException, BadRequestException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Url } from './entities/url.entity';
-import { CreateUrlDto } from './dto/create-url.dto'; // Vamos criar este DTO
-import { ConfigService } from '@nestjs/config'; // Para acessar BASE_URL
+import { CreateUrlDto } from './dto/create-url.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UrlService {
   constructor(
     @InjectRepository(Url)
     private urlRepository: Repository<Url>,
-    private configService: ConfigService, // Injetar ConfigService
+    private configService: ConfigService,
   ) {}
 
   async shortenUrl(createUrlDto: CreateUrlDto): Promise<string> {
     const { originalUrl } = createUrlDto;
 
-    // 1. Validar a originalUrl (básica, pode ser mais robusta com um Pipe)
     if (!this.isValidUrl(originalUrl)) {
       throw new BadRequestException('Invalid URL format.');
     }
 
-    // 2. Verificar se a originalUrl já foi encurtada
     const existingUrl = await this.urlRepository.findOne({ where: { originalUrl } });
     if (existingUrl) {
       const baseUrl = this.configService.get<string>('BASE_URL');
       return `${baseUrl}/${existingUrl.shortCode}`;
     }
 
-    // 3. Gerar shortCode único
-    let shortCode: string;
+    let shortCode: string = '';
     let isUnique = false;
-    const MAX_RETRIES = 10; // Limite de tentativas para evitar loop infinito
+    const MAX_RETRIES = 10;
     let retries = 0;
 
     while (!isUnique && retries < MAX_RETRIES) {
@@ -44,10 +41,9 @@ export class UrlService {
     }
 
     if (!isUnique) {
-      throw new ConflictException('Could not generate a unique short code after multiple attempts.');
+      throw new ConflictException('Não foi possível gerar a url encurtada');
     }
 
-    // 4. Salvar a originalUrl e o shortCode no banco de dados
     const newUrl = this.urlRepository.create({ originalUrl, shortCode });
     await this.urlRepository.save(newUrl);
 
@@ -59,7 +55,7 @@ export class UrlService {
     const url = await this.urlRepository.findOne({ where: { shortCode } });
 
     if (!url) {
-      throw new NotFoundException('Short URL not found or has been deleted.');
+      throw new NotFoundException('URL encurtada não encontrada.');
     }
 
     url.clicks++;

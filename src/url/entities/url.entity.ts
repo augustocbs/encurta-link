@@ -5,7 +5,7 @@ export class Url {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 2048, unique: true, nullable: false })
+  @Column({ type: 'varchar', length: 767, unique: true, nullable: false })
   originalUrl: string;
 
   @Column({ type: 'varchar', length: 6, unique: true, nullable: false })
