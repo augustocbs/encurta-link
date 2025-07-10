@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Url } from './entities/url.entity';
@@ -7,6 +7,8 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UrlService {
+  private readonly logger = new Logger(UrlService.name);
+  
   constructor(
     @InjectRepository(Url)
     private urlRepository: Repository<Url>,
@@ -15,14 +17,17 @@ export class UrlService {
 
   async shortenUrl(createUrlDto: CreateUrlDto): Promise<string> {
     const { originalUrl } = createUrlDto;
+    this.logger.log(`Tentando encurtar URL: ${originalUrl}`);
 
     if (!this.isValidUrl(originalUrl)) {
+      this.logger.warn(`Formato de URL inválido: ${originalUrl}`);
       throw new BadRequestException('Invalid URL format.');
     }
 
     const existingUrl = await this.urlRepository.findOne({ where: { originalUrl } });
     if (existingUrl) {
       const baseUrl = this.configService.get<string>('BASE_URL');
+      this.logger.log(`URL encurtada com sucesso: ${existingUrl.shortCode} para ${originalUrl}`);
       return `${baseUrl}/${existingUrl.shortCode}`;
     }
 
@@ -48,10 +53,12 @@ export class UrlService {
     await this.urlRepository.save(newUrl);
 
     const baseUrl = this.configService.get<string>('BASE_URL');
+    this.logger.log(`URL encurtada com sucesso: ${newUrl.shortCode} para ${originalUrl}`);
     return `${baseUrl}/${newUrl.shortCode}`;
   }
 
   async redirectToOriginalUrl(shortCode: string): Promise<string> {
+    this.logger.log(`Tentando redirecionar pelo código: ${shortCode}`);
     const url = await this.urlRepository.findOne({ where: { shortCode } });
 
     if (!url) {
@@ -60,7 +67,7 @@ export class UrlService {
 
     url.clicks++;
     await this.urlRepository.save(url);
-
+    this.logger.log(`Redirecionado ${shortCode} para ${url.originalUrl}. Clicks: ${url.clicks}`);
     return url.originalUrl;
   }
 

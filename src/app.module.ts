@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UrlModule } from './url/url.module';
 import { Url } from './url/entities/url.entity';
+import { WinstonModule } from 'nest-winston';
+import { winstonConfig } from './config/logger.config';
 
 @Module({
   imports: [
@@ -21,6 +23,7 @@ import { Url } from './url/entities/url.entity';
       synchronize: true, // utilizando em desenvolvimento
       logging: false,
     }),
+    WinstonModule.forRoot(winstonConfig),
     UrlModule,
   ],
 })
