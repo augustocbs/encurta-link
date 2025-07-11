@@ -62,13 +62,25 @@ describe('AuthController', () => {
         email: 'newuser@example.com',
         password: 'password123',
       };
-      mockUsersRepository.findOne.mockResolvedValue(null); 
-      mockUsersRepository.create.mockReturnValue({ id: 1, ...registerDto, password: 'hashedPassword' });
-      mockUsersRepository.save.mockResolvedValue({ id: 1, ...registerDto, password: 'hashedPassword' });
+      mockUsersRepository.findOne.mockResolvedValue(null);
+      mockUsersRepository.create.mockReturnValue({
+        id: 1,
+        ...registerDto,
+        password: 'hashedPassword',
+      });
+      mockUsersRepository.save.mockResolvedValue({
+        id: 1,
+        ...registerDto,
+        password: 'hashedPassword',
+      });
 
       const result = await controller.register(registerDto);
-      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({ where: { email: registerDto.email } });
-      expect(authService.hashPassword).toHaveBeenCalledWith(registerDto.password);
+      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
+        where: { email: registerDto.email },
+      });
+      expect(authService.hashPassword).toHaveBeenCalledWith(
+        registerDto.password,
+      );
       expect(mockUsersRepository.create).toHaveBeenCalledWith({
         email: registerDto.email,
         password: 'hashedPassword',
@@ -82,10 +94,17 @@ describe('AuthController', () => {
         email: 'existing@example.com',
         password: 'password123',
       };
-      mockUsersRepository.findOne.mockResolvedValue({ id: 1, email: 'existing@example.com' }); 
+      mockUsersRepository.findOne.mockResolvedValue({
+        id: 1,
+        email: 'existing@example.com',
+      });
 
-      await expect(controller.register(registerDto)).rejects.toThrow(ConflictException);
-      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({ where: { email: registerDto.email } });
+      await expect(controller.register(registerDto)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
+        where: { email: registerDto.email },
+      });
       expect(authService.hashPassword).not.toHaveBeenCalled();
       expect(mockUsersRepository.create).not.toHaveBeenCalled();
       expect(mockUsersRepository.save).not.toHaveBeenCalled();
@@ -98,14 +117,25 @@ describe('AuthController', () => {
         email: 'test@example.com',
         password: 'password123',
       };
-      const user = { id: 1, email: 'test@example.com', password: 'hashedPassword' } as User;
+      const user = {
+        id: 1,
+        email: 'test@example.com',
+        password: 'hashedPassword',
+      } as User;
       mockUsersRepository.findOne.mockResolvedValue(user);
       (mockAuthService.comparePassword as jest.Mock).mockResolvedValue(true);
-      (mockAuthService.generateJwtToken as jest.Mock).mockResolvedValue('mockedJwtToken');
+      (mockAuthService.generateJwtToken as jest.Mock).mockResolvedValue(
+        'mockedJwtToken',
+      );
 
       const result = await controller.login(loginDto);
-      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({ where: { email: loginDto.email } });
-      expect(authService.comparePassword).toHaveBeenCalledWith(loginDto.password, user.password);
+      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
+        where: { email: loginDto.email },
+      });
+      expect(authService.comparePassword).toHaveBeenCalledWith(
+        loginDto.password,
+        user.password,
+      );
       expect(authService.generateJwtToken).toHaveBeenCalledWith(user);
       expect(result).toEqual({ access_token: 'mockedJwtToken' });
     });
@@ -115,10 +145,14 @@ describe('AuthController', () => {
         email: 'nonexistent@example.com',
         password: 'password123',
       };
-      mockUsersRepository.findOne.mockResolvedValue(null); 
+      mockUsersRepository.findOne.mockResolvedValue(null);
 
-      await expect(controller.login(loginDto)).rejects.toThrow(UnauthorizedException);
-      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({ where: { email: loginDto.email } });
+      await expect(controller.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
+        where: { email: loginDto.email },
+      });
       expect(authService.comparePassword).not.toHaveBeenCalled();
       expect(authService.generateJwtToken).not.toHaveBeenCalled();
     });
@@ -128,20 +162,35 @@ describe('AuthController', () => {
         email: 'test@example.com',
         password: 'wrongpassword',
       };
-      const user = { id: 1, email: 'test@example.com', password: 'hashedPassword' } as User;
+      const user = {
+        id: 1,
+        email: 'test@example.com',
+        password: 'hashedPassword',
+      } as User;
       mockUsersRepository.findOne.mockResolvedValue(user);
-      (mockAuthService.comparePassword as jest.Mock).mockResolvedValue(false); 
+      (mockAuthService.comparePassword as jest.Mock).mockResolvedValue(false);
 
-      await expect(controller.login(loginDto)).rejects.toThrow(UnauthorizedException);
-      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({ where: { email: loginDto.email } });
-      expect(authService.comparePassword).toHaveBeenCalledWith(loginDto.password, user.password);
+      await expect(controller.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
+        where: { email: loginDto.email },
+      });
+      expect(authService.comparePassword).toHaveBeenCalledWith(
+        loginDto.password,
+        user.password,
+      );
       expect(authService.generateJwtToken).not.toHaveBeenCalled();
     });
   });
 
   describe('getProfile', () => {
     it('deve retornar o perfil do usuário autenticado', async () => {
-      const user = { id: 1, email: 'test@example.com', password: 'hashedPassword' } as User;
+      const user = {
+        id: 1,
+        email: 'test@example.com',
+        password: 'hashedPassword',
+      } as User;
 
       const req = { user } as AuthenticatedRequest;
       const result = controller.getProfile(req);

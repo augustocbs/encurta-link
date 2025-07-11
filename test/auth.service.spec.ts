@@ -12,7 +12,6 @@ const mockUsersRepository = {
   save: jest.fn(),
 };
 
-// Mock do JwtService
 const mockJwtService = {
   sign: jest.fn(() => 'mockedJwtToken'),
 };
@@ -67,13 +66,16 @@ describe('AuthService', () => {
       const password = 'plainPassword';
       const hash = 'hashedPassword';
       const result = await service.comparePassword(password, hash);
-      expect(bcrypt.compare).toHaveBeenCalledWith(password, hash); 
+      expect(bcrypt.compare).toHaveBeenCalledWith(password, hash);
       expect(result).toBe(true);
     });
 
     it('deve retornar false para senhas não correspondentes', async () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      const result = await service.comparePassword('wrongPassword', 'hashedPassword');
+      const result = await service.comparePassword(
+        'wrongPassword',
+        'hashedPassword',
+      );
       expect(result).toBe(false);
     });
   });
@@ -82,7 +84,10 @@ describe('AuthService', () => {
     it('deve gerar um JWT para o usuário', async () => {
       const user = { id: 1, email: 'test@example.com' } as User;
       const token = await service.generateJwtToken(user);
-      expect(jwtService.sign).toHaveBeenCalledWith({ email: user.email, sub: user.id });
+      expect(jwtService.sign).toHaveBeenCalledWith({
+        email: user.email,
+        sub: user.id,
+      });
       expect(token).toBe('mockedJwtToken');
     });
   });

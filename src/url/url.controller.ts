@@ -6,13 +6,19 @@ import {
   Param,
   Res,
   HttpStatus,
-  UseGuards, 
-  Req, 
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UrlService } from './url.service';
 import { CreateUrlDto } from './dto/create-url.dto';
 import { Response, Request } from 'express';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger'; 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 @ApiTags('urls')
@@ -22,8 +28,11 @@ export class UrlController {
 
   @Post('shorten')
   @UseGuards(OptionalJwtAuthGuard)
-  @ApiBearerAuth() 
-  @ApiOperation({ summary: 'Encurta uma URL longa, opcionalmente associando-a a um usuário autenticado.' })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Encurta uma URL longa, opcionalmente associando-a a um usuário autenticado.',
+  })
   @ApiResponse({
     status: 201,
     description: 'URL encurtada com sucesso.',
@@ -35,7 +44,7 @@ export class UrlController {
     description: 'Não foi possível gerar um código único.',
   })
   async shorten(@Body() createUrlDto: CreateUrlDto, @Req() req: Request) {
-    const userId = req.user ? (req.user as any).id : null; 
+    const userId = req.user ? (req.user as any).id : null;
 
     const shortUrl = await this.urlService.shortenUrl(createUrlDto, userId);
     return { shortUrl };

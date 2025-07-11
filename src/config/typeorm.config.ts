@@ -31,7 +31,7 @@ export const createTypeOrmConfig = (configService: ConfigService) => {
     password: dbPassword,
     database: dbDatabase,
     entities: [User, Url],
-    migrations: ['src/migrations/*.ts'], 
+    migrations: ['src/migrations/*.ts'],
     synchronize: false,
     logging: true,
   };
@@ -39,7 +39,7 @@ export const createTypeOrmConfig = (configService: ConfigService) => {
 
 export const createDataSourceForCli = () => {
   require('dotenv').config();
-    return new DataSource({
+  return new DataSource({
     type: 'mysql',
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || '3306', 10),
@@ -47,7 +47,7 @@ export const createDataSourceForCli = () => {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     entities: [User, Url],
-    migrations: ['src/migrations/*.ts'], 
+    migrations: ['src/migrations/*.ts'],
     synchronize: false,
     logging: true,
   });

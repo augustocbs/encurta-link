@@ -21,7 +21,10 @@ export class UrlService {
     private configService: ConfigService,
   ) {}
 
-  async shortenUrl(createUrlDto: CreateUrlDto, userId?: number): Promise<string> {
+  async shortenUrl(
+    createUrlDto: CreateUrlDto,
+    userId?: number,
+  ): Promise<string> {
     const { originalUrl } = createUrlDto;
     this.logger.log(`Tentando encurtar URL: ${originalUrl}`);
 

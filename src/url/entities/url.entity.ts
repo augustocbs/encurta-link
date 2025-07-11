@@ -22,7 +22,7 @@ export class Url {
     nullable: true,
     onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'userId' }) 
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Column({ type: 'varchar', length: 767, unique: true, nullable: false })
