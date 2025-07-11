@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UrlModule } from './url/url.module';
 import { Url } from './url/entities/url.entity';
 import { WinstonModule } from 'nest-winston';
 import { winstonConfig } from './config/logger.config';
+import { User } from './users/entities/user.entity';
+import { AuthModule } from './auth/auth.module';
+import { createTypeOrmConfig } from './config/typeorm.config';
 
 @Module({
   imports: [
@@ -12,19 +15,20 @@ import { winstonConfig } from './config/logger.config';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT || '3306', 10),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      entities: [Url],
-      synchronize: true, // utilizando em desenvolvimento
-      logging: false,
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        ...createTypeOrmConfig(configService),
+        entities: [Url, User],
+        migrations: ['dist/migrations/*.js'],
+        migrationsRun: false,
+        logging: false,
+      }),
+      inject: [ConfigService],
     }),
     WinstonModule.forRoot(winstonConfig),
     UrlModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

@@ -1,0 +1,46 @@
+import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt'; // Importe o JwtService
+import * as bcrypt from 'bcryptjs';
+import { User } from '../users/entities/user.entity'; // Importe a entidade User
+import { Repository } from 'typeorm'; // Importe Repository
+import { InjectRepository } from '@nestjs/typeorm';
+
+@Injectable()
+export class AuthService {
+  private readonly saltRounds = 10;
+
+  constructor(
+    @InjectRepository(User) // Injete o repositório do User
+    private usersRepository: Repository<User>,
+    private jwtService: JwtService, // Injete o JwtService
+  ) {}
+
+  /**
+   * Gera um hash para a senha fornecida.
+   * @param password A senha em texto puro.
+   * @returns O hash da senha.
+   */
+  async hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, this.saltRounds);
+  }
+
+  /**
+   * Compara uma senha fornecida com o hash armazenado.
+   * @param password A senha em texto puro.
+   * @param hash O hash armazenado.
+   * @returns TRUE se a senha corresponder ao hash, FALSE caso contrário.
+   */
+  async comparePassword(password: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(password, hash);
+  }
+
+  /**
+   * Gera um token JWT para um usuário.
+   * @param user O objeto User para o qual o token será gerado.
+   * @returns O token JWT.
+   */
+  async generateJwtToken(user: User): Promise<string> {
+    const payload = { email: user.email, sub: user.id };
+    return this.jwtService.sign(payload);
+  }
+}

@@ -18,6 +18,7 @@ async function bootstrap() {
     .setDescription('API para encurtar e redirecionar URLs')
     .setVersion('0.1.0')
     .addTag('urls')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

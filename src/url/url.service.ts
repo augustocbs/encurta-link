@@ -21,7 +21,7 @@ export class UrlService {
     private configService: ConfigService,
   ) {}
 
-  async shortenUrl(createUrlDto: CreateUrlDto): Promise<string> {
+  async shortenUrl(createUrlDto: CreateUrlDto, userId?: number): Promise<string> {
     const { originalUrl } = createUrlDto;
     this.logger.log(`Tentando encurtar URL: ${originalUrl}`);
 
@@ -59,7 +59,16 @@ export class UrlService {
       throw new ConflictException('Não foi possível gerar a url encurtada');
     }
 
-    const newUrl = this.urlRepository.create({ originalUrl, shortCode });
+    const urlData: Partial<Url> = {
+      originalUrl,
+      shortCode,
+    };
+
+    if (userId) {
+      urlData.userId = userId;
+    }
+
+    const newUrl = this.urlRepository.create(urlData);
     await this.urlRepository.save(newUrl);
 
     const baseUrl = this.configService.get<string>('BASE_URL');
@@ -77,7 +86,7 @@ export class UrlService {
       throw new NotFoundException('URL encurtada não encontrada.');
     }
 
-    url.clicks++;
+    url.clicks = (url.clicks || 0) + 1;
     await this.urlRepository.save(url);
     this.logger.log(
       `Redirecionado ${shortCode} para ${url.originalUrl}. Clicks: ${url.clicks}`,
