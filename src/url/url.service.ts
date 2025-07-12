@@ -21,22 +21,33 @@ export class UrlService {
     private configService: ConfigService,
   ) {}
 
-  async shortenUrl(createUrlDto: CreateUrlDto): Promise<string> {
+  async shortenUrl(
+    createUrlDto: CreateUrlDto,
+    userId?: number,
+  ): Promise<string> {
     const { originalUrl } = createUrlDto;
     this.logger.log(`Tentando encurtar URL: ${originalUrl}`);
 
     if (!this.isValidUrl(originalUrl)) {
       this.logger.warn(`Formato de URL inválido: ${originalUrl}`);
-      throw new BadRequestException('Invalid URL format.');
+      throw new BadRequestException('URL com formato inválido.');
+    }
+
+    const whereCondition: { originalUrl: string; userId?: number } = {
+      originalUrl,
+    };
+    if (userId) {
+      whereCondition.userId = userId;
     }
 
     const existingUrl = await this.urlRepository.findOne({
-      where: { originalUrl },
+      where: whereCondition,
     });
+
     if (existingUrl) {
       const baseUrl = this.configService.get<string>('BASE_URL');
       this.logger.log(
-        `URL encurtada com sucesso: ${existingUrl.shortCode} para ${originalUrl}`,
+        `URL já existe: ${existingUrl.shortCode} para ${originalUrl}`,
       );
       return `${baseUrl}/${existingUrl.shortCode}`;
     }
@@ -59,14 +70,23 @@ export class UrlService {
       throw new ConflictException('Não foi possível gerar a url encurtada');
     }
 
-    const newUrl = this.urlRepository.create({ originalUrl, shortCode });
-    await this.urlRepository.save(newUrl);
+    const urlData: Partial<Url> = {
+      originalUrl,
+      shortCode,
+    };
+
+    if (userId) {
+      urlData.userId = userId;
+    }
+
+    const newUrl = this.urlRepository.create(urlData);
+    const savedUrl = await this.urlRepository.save(newUrl);
 
     const baseUrl = this.configService.get<string>('BASE_URL');
     this.logger.log(
-      `URL encurtada com sucesso: ${newUrl.shortCode} para ${originalUrl}`,
+      `URL encurtada com sucesso: ${savedUrl.shortCode} para ${originalUrl}`,
     );
-    return `${baseUrl}/${newUrl.shortCode}`;
+    return `${baseUrl}/${savedUrl.shortCode}`;
   }
 
   async redirectToOriginalUrl(shortCode: string): Promise<string> {
@@ -77,7 +97,7 @@ export class UrlService {
       throw new NotFoundException('URL encurtada não encontrada.');
     }
 
-    url.clicks++;
+    url.clicks = (url.clicks || 0) + 1;
     await this.urlRepository.save(url);
     this.logger.log(
       `Redirecionado ${shortCode} para ${url.originalUrl}. Clicks: ${url.clicks}`,
