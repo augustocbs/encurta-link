@@ -33,14 +33,21 @@ export class UrlService {
     }
 
     let shortCode: string = '';
+    let existingUrl: Url | null;
     let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    while (!isUnique) {
+    do {
       shortCode = this.generateShortCode();
-      const found = await this.urlRepository.findOne({ where: { shortCode } });
-      if (!found) {
-        isUnique = true;
-      }
+      existingUrl = await this.urlRepository.findOne({ where: { shortCode } });
+      attempts++;
+    } while (existingUrl && attempts < maxAttempts);
+
+    if (existingUrl) {
+      this.logger.error(
+        'Não foi possível gerar um código único após várias tentativas.',
+      );
     }
 
     const urlData: Partial<Url> = {

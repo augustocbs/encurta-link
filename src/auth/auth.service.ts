@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'; // Importe o JwtService
+import { JwtService } from '@nestjs/jwt'; 
 import * as bcrypt from 'bcryptjs';
-import { User } from '../users/entities/user.entity'; // Importe a entidade User
-import { Repository } from 'typeorm'; // Importe Repository
+import { User } from '../users/entities/user.entity'; 
+import { Repository } from 'typeorm'; 
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
@@ -10,9 +10,9 @@ export class AuthService {
   private readonly saltRounds = 10;
 
   constructor(
-    @InjectRepository(User) // Injete o repositório do User
+    @InjectRepository(User)
     private usersRepository: Repository<User>,
-    private jwtService: JwtService, // Injete o JwtService
+    private jwtService: JwtService,
   ) {}
 
   /**

@@ -1,4 +1,3 @@
-// test/url/url.service.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -83,8 +82,10 @@ describe('UrlService', () => {
     });
 
     it('deve criar uma nova URL encurtada se originalUrl não existir (sem userId)', async () => {
-      mockUrlRepository.findOne.mockResolvedValueOnce(null);
-      mockUrlRepository.findOne.mockResolvedValueOnce(null);
+      // Seja explícito sobre o mock das duas chamadas separadas para findOne
+      mockUrlRepository.findOne
+        .mockResolvedValueOnce(null) // Para a verificação da originalUrl
+        .mockResolvedValueOnce(null); // Para a verificação de unicidade do shortCode
 
       const createdUrl: Url = {
         originalUrl: 'https://new.com',
@@ -108,7 +109,6 @@ describe('UrlService', () => {
       });
       expect(result).toBe('http://localhost:3000/def456');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
-      // Corrigido: Removida a propriedade `userId: null` da asserção, pois ela não é enviada quando nula.
       expect(mockUrlRepository.create).toHaveBeenCalledWith({
         originalUrl: 'https://new.com',
         shortCode: 'def456',
@@ -127,7 +127,11 @@ describe('UrlService', () => {
         userId: testUserId,
       };
 
-      mockUrlRepository.findOne.mockResolvedValue(null); // Simplificado para uma única chamada, pois o resultado é o mesmo.
+      // Mock explícito das duas chamadas para findOne para maior clareza.
+      mockUrlRepository.findOne
+        .mockResolvedValueOnce(null) // 1. Verifica se a originalUrl existe (retorna nulo).
+        .mockResolvedValueOnce(null); // 2. Verifica a unicidade do shortCode (retorna nulo).
+
       mockUrlRepository.create.mockReturnValue(createdUrlEntity as Url);
       mockUrlRepository.save.mockResolvedValue(createdUrlEntity as Url);
 
@@ -148,7 +152,6 @@ describe('UrlService', () => {
         shortCode,
         userId: testUserId,
       });
-      // Corrigido: Garante que o objeto retornado por 'create' é o mesmo que é passado para 'save'.
       expect(mockUrlRepository.save).toHaveBeenCalledWith(createdUrlEntity);
     });
 
@@ -159,13 +162,23 @@ describe('UrlService', () => {
     });
 
     it('deve lançar ConflictException se não conseguir gerar um shortCode único', async () => {
+      // Este teste identifica corretamente um potencial laço infinito no UrlService.
+      // O erro 'heap out of memory' ocorre porque o serviço provavelmente tenta
+      // gerar um shortCode indefinidamente, sem um limite máximo de tentativas.
+      // A correção principal deve ser feita em `url.service.ts` para adicionar esse limite.
+
+      // Configuração do Mock para acionar o cenário:
+      // 1. A verificação da originalUrl retorna nulo, prosseguindo para gerar um novo código.
       mockUrlRepository.findOne.mockResolvedValueOnce(null);
+      // 2. A verificação de unicidade do shortCode *sempre* encontra um conflito.
       mockUrlRepository.findOne.mockResolvedValue({
         shortCode: 'fixed',
       } as Url);
 
       jest.spyOn(service as any, 'generateShortCode').mockReturnValue('fixed');
 
+      // Com uma implementação adequada no serviço (com limite de tentativas),
+      // este teste deve passar ao capturar a ConflictException lançada.
       await expect(
         service.shortenUrl({ originalUrl: 'https://another.com' }),
       ).rejects.toThrow(ConflictException);
@@ -196,7 +209,7 @@ describe('UrlService', () => {
         id: 1,
         originalUrl: 'http://example.com',
         shortCode: '123456',
-        clicks: 0,
+        clicks: null, // Usar null para testar melhor a lógica `|| 0`
         userId: 1,
         user: new User(),
         createdAt: new Date(),
@@ -204,16 +217,13 @@ describe('UrlService', () => {
         deletedAt: undefined,
       };
       mockUrlRepository.findOne.mockResolvedValue(url);
-      mockUrlRepository.save.mockResolvedValue({ ...url, clicks: 1 });
 
       const result = await service.redirectToOriginalUrl('123456');
 
       expect(result).toBe('http://example.com');
-
       expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
         where: { shortCode: '123456' },
       });
-
       expect(url.clicks).toBe(1);
       expect(mockUrlRepository.save).toHaveBeenCalledWith(url);
     });
