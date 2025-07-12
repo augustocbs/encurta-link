@@ -1,5 +1,6 @@
 import {
   Injectable,
+  ConflictException,
   NotFoundException,
   BadRequestException,
   Logger,
@@ -32,22 +33,39 @@ export class UrlService {
       throw new BadRequestException('URL com formato inválido.');
     }
 
-    let shortCode: string = '';
-    let existingUrl: Url | null;
-    let isUnique = false;
-    let attempts = 0;
-    const maxAttempts = 10;
+    const whereCondition: any = { originalUrl };
+    if (userId) {
+      whereCondition.userId = userId;
+    }
 
-    do {
-      shortCode = this.generateShortCode();
-      existingUrl = await this.urlRepository.findOne({ where: { shortCode } });
-      attempts++;
-    } while (existingUrl && attempts < maxAttempts);
+    const existingUrl = await this.urlRepository.findOne({
+      where: whereCondition,
+    });
 
     if (existingUrl) {
-      this.logger.error(
-        'Não foi possível gerar um código único após várias tentativas.',
+      const baseUrl = this.configService.get<string>('BASE_URL');
+      this.logger.log(
+        `URL já existe: ${existingUrl.shortCode} para ${originalUrl}`,
       );
+      return `${baseUrl}/${existingUrl.shortCode}`;
+    }
+
+    let shortCode: string = '';
+    let isUnique = false;
+    const MAX_RETRIES = 10;
+    let retries = 0;
+
+    while (!isUnique && retries < MAX_RETRIES) {
+      shortCode = this.generateShortCode();
+      const found = await this.urlRepository.findOne({ where: { shortCode } });
+      if (!found) {
+        isUnique = true;
+      }
+      retries++;
+    }
+
+    if (!isUnique) {
+      throw new ConflictException('Não foi possível gerar a url encurtada');
     }
 
     const urlData: Partial<Url> = {
@@ -60,23 +78,23 @@ export class UrlService {
     }
 
     const newUrl = this.urlRepository.create(urlData);
-    await this.urlRepository.save(newUrl);
+    const savedUrl = await this.urlRepository.save(newUrl);
 
     const baseUrl = this.configService.get<string>('BASE_URL');
     this.logger.log(
-      `URL encurtada com sucesso: ${newUrl.shortCode} para ${originalUrl}`,
+      `URL encurtada com sucesso: ${savedUrl.shortCode} para ${originalUrl}`,
     );
-    return `${baseUrl}/${newUrl.shortCode}`;
+    return `${baseUrl}/${savedUrl.shortCode}`;
   }
 
   async redirectToOriginalUrl(shortCode: string): Promise<string> {
     this.logger.log(`Tentando redirecionar pelo código: ${shortCode}`);
     const url = await this.urlRepository.findOne({ where: { shortCode } });
-
+    
     if (!url) {
       throw new NotFoundException('URL encurtada não encontrada.');
     }
-
+    
     url.clicks = (url.clicks || 0) + 1;
     await this.urlRepository.save(url);
     this.logger.log(

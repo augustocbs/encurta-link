@@ -50,7 +50,10 @@ describe('UrlService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
+    mockUrlRepository.findOne.mockReset();
+    mockUrlRepository.create.mockReset();
+    mockUrlRepository.save.mockReset();
   });
 
   it('deve estar definido', () => {
@@ -68,11 +71,13 @@ describe('UrlService', () => {
         shortCode: 'abc123',
         clicks: 0,
       } as Url;
-      mockUrlRepository.findOne.mockResolvedValue(urlExistente);
+      
+      mockUrlRepository.findOne.mockResolvedValueOnce(urlExistente);
 
       const result = await service.shortenUrl({
         originalUrl: 'https://example.com',
       });
+      
       expect(result).toBe('http://localhost:3000/abc123');
       expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
         where: { originalUrl: 'https://example.com' },
@@ -82,10 +87,8 @@ describe('UrlService', () => {
     });
 
     it('deve criar uma nova URL encurtada se originalUrl não existir (sem userId)', async () => {
-      // Seja explícito sobre o mock das duas chamadas separadas para findOne
-      mockUrlRepository.findOne
-        .mockResolvedValueOnce(null) // Para a verificação da originalUrl
-        .mockResolvedValueOnce(null); // Para a verificação de unicidade do shortCode
+      mockUrlRepository.findOne.mockResolvedValueOnce(null);
+      mockUrlRepository.findOne.mockResolvedValueOnce(null);
 
       const createdUrl: Url = {
         originalUrl: 'https://new.com',
@@ -107,6 +110,7 @@ describe('UrlService', () => {
       const result = await service.shortenUrl({
         originalUrl: 'https://new.com',
       });
+      
       expect(result).toBe('http://localhost:3000/def456');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
       expect(mockUrlRepository.create).toHaveBeenCalledWith({
@@ -125,15 +129,19 @@ describe('UrlService', () => {
         originalUrl,
         shortCode,
         userId: testUserId,
-      };
+        id: 1,
+        clicks: 0,
+        user: new User(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+      } as Url;
 
-      // Mock explícito das duas chamadas para findOne para maior clareza.
-      mockUrlRepository.findOne
-        .mockResolvedValueOnce(null) // 1. Verifica se a originalUrl existe (retorna nulo).
-        .mockResolvedValueOnce(null); // 2. Verifica a unicidade do shortCode (retorna nulo).
-
-      mockUrlRepository.create.mockReturnValue(createdUrlEntity as Url);
-      mockUrlRepository.save.mockResolvedValue(createdUrlEntity as Url);
+      mockUrlRepository.findOne.mockResolvedValueOnce(null);
+      mockUrlRepository.findOne.mockResolvedValueOnce(null);
+      
+      mockUrlRepository.create.mockReturnValue(createdUrlEntity);
+      mockUrlRepository.save.mockResolvedValue(createdUrlEntity);
 
       jest
         .spyOn(service as any, 'generateShortCode')
@@ -145,8 +153,12 @@ describe('UrlService', () => {
         },
         testUserId,
       );
+      
       expect(result).toBe('http://localhost:3000/ghi789');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
+      expect(mockUrlRepository.findOne).toHaveBeenNthCalledWith(1, {
+        where: { originalUrl, userId: testUserId },
+      });
       expect(mockUrlRepository.create).toHaveBeenCalledWith({
         originalUrl,
         shortCode,
@@ -162,23 +174,14 @@ describe('UrlService', () => {
     });
 
     it('deve lançar ConflictException se não conseguir gerar um shortCode único', async () => {
-      // Este teste identifica corretamente um potencial laço infinito no UrlService.
-      // O erro 'heap out of memory' ocorre porque o serviço provavelmente tenta
-      // gerar um shortCode indefinidamente, sem um limite máximo de tentativas.
-      // A correção principal deve ser feita em `url.service.ts` para adicionar esse limite.
-
-      // Configuração do Mock para acionar o cenário:
-      // 1. A verificação da originalUrl retorna nulo, prosseguindo para gerar um novo código.
       mockUrlRepository.findOne.mockResolvedValueOnce(null);
-      // 2. A verificação de unicidade do shortCode *sempre* encontra um conflito.
       mockUrlRepository.findOne.mockResolvedValue({
         shortCode: 'fixed',
+        originalUrl: 'https://existing.com',
       } as Url);
 
       jest.spyOn(service as any, 'generateShortCode').mockReturnValue('fixed');
 
-      // Com uma implementação adequada no serviço (com limite de tentativas),
-      // este teste deve passar ao capturar a ConflictException lançada.
       await expect(
         service.shortenUrl({ originalUrl: 'https://another.com' }),
       ).rejects.toThrow(ConflictException);
@@ -209,7 +212,7 @@ describe('UrlService', () => {
         id: 1,
         originalUrl: 'http://example.com',
         shortCode: '123456',
-        clicks: null, // Usar null para testar melhor a lógica `|| 0`
+        clicks: 0,
         userId: 1,
         user: new User(),
         createdAt: new Date(),
@@ -217,13 +220,16 @@ describe('UrlService', () => {
         deletedAt: undefined,
       };
       mockUrlRepository.findOne.mockResolvedValue(url);
+      mockUrlRepository.save.mockResolvedValue({ ...url, clicks: 1 });
 
       const result = await service.redirectToOriginalUrl('123456');
 
       expect(result).toBe('http://example.com');
+
       expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
         where: { shortCode: '123456' },
       });
+
       expect(url.clicks).toBe(1);
       expect(mockUrlRepository.save).toHaveBeenCalledWith(url);
     });
