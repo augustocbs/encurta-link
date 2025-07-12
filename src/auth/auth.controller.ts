@@ -111,7 +111,7 @@ export class AuthController {
     description: 'Não autorizado.',
   })
   getProfile(@Request() req: AuthenticatedRequest) {
-    const { password, ...result } = req.user;
+    const { ...result } = req.user;
     return result;
   }
 }

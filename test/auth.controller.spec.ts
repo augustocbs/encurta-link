@@ -27,7 +27,6 @@ const mockAuthService = {
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: AuthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -45,7 +44,6 @@ describe('AuthController', () => {
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
-    authService = module.get<AuthService>(AuthService);
   });
 
   afterEach(() => {
@@ -78,7 +76,7 @@ describe('AuthController', () => {
       expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
         where: { email: registerDto.email },
       });
-      expect(authService.hashPassword).toHaveBeenCalledWith(
+      expect(mockAuthService.hashPassword).toHaveBeenCalledWith(
         registerDto.password,
       );
       expect(mockUsersRepository.create).toHaveBeenCalledWith({
@@ -105,7 +103,7 @@ describe('AuthController', () => {
       expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
         where: { email: registerDto.email },
       });
-      expect(authService.hashPassword).not.toHaveBeenCalled();
+      expect(mockAuthService.hashPassword).not.toHaveBeenCalled();
       expect(mockUsersRepository.create).not.toHaveBeenCalled();
       expect(mockUsersRepository.save).not.toHaveBeenCalled();
     });
@@ -132,11 +130,11 @@ describe('AuthController', () => {
       expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
         where: { email: loginDto.email },
       });
-      expect(authService.comparePassword).toHaveBeenCalledWith(
+      expect(mockAuthService.comparePassword).toHaveBeenCalledWith(
         loginDto.password,
         user.password,
       );
-      expect(authService.generateJwtToken).toHaveBeenCalledWith(user);
+      expect(mockAuthService.generateJwtToken).toHaveBeenCalledWith(user);
       expect(result).toEqual({ access_token: 'mockedJwtToken' });
     });
 
@@ -153,8 +151,8 @@ describe('AuthController', () => {
       expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
         where: { email: loginDto.email },
       });
-      expect(authService.comparePassword).not.toHaveBeenCalled();
-      expect(authService.generateJwtToken).not.toHaveBeenCalled();
+      expect(mockAuthService.comparePassword).not.toHaveBeenCalled();
+      expect(mockAuthService.generateJwtToken).not.toHaveBeenCalled();
     });
 
     it('deve lançar UnauthorizedException para credenciais inválidas (senha incorreta)', async () => {
@@ -176,20 +174,19 @@ describe('AuthController', () => {
       expect(mockUsersRepository.findOne).toHaveBeenCalledWith({
         where: { email: loginDto.email },
       });
-      expect(authService.comparePassword).toHaveBeenCalledWith(
+      expect(mockAuthService.comparePassword).toHaveBeenCalledWith(
         loginDto.password,
         user.password,
       );
-      expect(authService.generateJwtToken).not.toHaveBeenCalled();
+      expect(mockAuthService.generateJwtToken).not.toHaveBeenCalled();
     });
   });
 
   describe('getProfile', () => {
-    it('deve retornar o perfil do usuário autenticado', async () => {
+    it('deve retornar o perfil do usuário autenticado', () => {
       const user = {
         id: 1,
         email: 'test@example.com',
-        password: 'hashedPassword',
       } as User;
 
       const req = { user } as AuthenticatedRequest;

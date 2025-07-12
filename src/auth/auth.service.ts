@@ -39,8 +39,8 @@ export class AuthService {
    * @param user O objeto User para o qual o token será gerado.
    * @returns O token JWT.
    */
-  async generateJwtToken(user: User): Promise<string> {
+  generateJwtToken(user: User): Promise<string> {
     const payload = { email: user.email, sub: user.id };
-    return this.jwtService.sign(payload);
+    return Promise.resolve(this.jwtService.sign(payload));
   }
 }

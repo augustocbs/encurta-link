@@ -28,7 +28,7 @@ export class UrlController {
 
   @Post('shorten')
   @UseGuards(OptionalJwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({
     summary:
       'Encurta uma URL longa, opcionalmente associando-a a um usuário autenticado.',
@@ -44,8 +44,7 @@ export class UrlController {
     description: 'Não foi possível gerar um código único.',
   })
   async shorten(@Body() createUrlDto: CreateUrlDto, @Req() req: Request) {
-    const userId = req.user ? (req.user as any).id : null;
-
+    const userId = (req.user as { id: number } | undefined)?.id;
     const shortUrl = await this.urlService.shortenUrl(createUrlDto, userId);
     return { shortUrl };
   }
@@ -58,18 +57,20 @@ export class UrlController {
     example: 'aZbKq7',
   })
   @ApiResponse({
-    status: 301,
-    description: 'Redirecionamento bem-sucedido para a URL original.',
+    status: 302,
+    description: 'Redirecionamento para a URL original.',
   })
-  @ApiResponse({
-    status: 404,
-    description: 'URL curta não encontrada ou excluída.',
-  })
+  @ApiResponse({ status: 404, description: 'URL encurtada não encontrada.' })
   async redirect(@Param('shortCode') shortCode: string, @Res() res: Response) {
     try {
       const originalUrl =
         await this.urlService.redirectToOriginalUrl(shortCode);
-      return res.redirect(HttpStatus.MOVED_PERMANENTLY, originalUrl);
+
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
+      res.redirect(HttpStatus.FOUND, originalUrl);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'URL não encontrada.';

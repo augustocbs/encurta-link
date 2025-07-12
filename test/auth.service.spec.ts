@@ -23,7 +23,6 @@ jest.mock('bcryptjs', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let jwtService: JwtService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -41,7 +40,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    jwtService = module.get<JwtService>(JwtService);
   });
 
   afterEach(() => {
@@ -84,7 +82,7 @@ describe('AuthService', () => {
     it('deve gerar um JWT para o usuário', async () => {
       const user = { id: 1, email: 'test@example.com' } as User;
       const token = await service.generateJwtToken(user);
-      expect(jwtService.sign).toHaveBeenCalledWith({
+      expect(mockJwtService.sign).toHaveBeenCalledWith({
         email: user.email,
         sub: user.id,
       });
