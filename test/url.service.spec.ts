@@ -71,13 +71,13 @@ describe('UrlService', () => {
         shortCode: 'abc123',
         clicks: 0,
       } as Url;
-      
+
       mockUrlRepository.findOne.mockResolvedValueOnce(urlExistente);
 
       const result = await service.shortenUrl({
         originalUrl: 'https://example.com',
       });
-      
+
       expect(result).toBe('http://localhost:3000/abc123');
       expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
         where: { originalUrl: 'https://example.com' },
@@ -110,7 +110,7 @@ describe('UrlService', () => {
       const result = await service.shortenUrl({
         originalUrl: 'https://new.com',
       });
-      
+
       expect(result).toBe('http://localhost:3000/def456');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
       expect(mockUrlRepository.create).toHaveBeenCalledWith({
@@ -139,7 +139,7 @@ describe('UrlService', () => {
 
       mockUrlRepository.findOne.mockResolvedValueOnce(null);
       mockUrlRepository.findOne.mockResolvedValueOnce(null);
-      
+
       mockUrlRepository.create.mockReturnValue(createdUrlEntity);
       mockUrlRepository.save.mockResolvedValue(createdUrlEntity);
 
@@ -153,7 +153,7 @@ describe('UrlService', () => {
         },
         testUserId,
       );
-      
+
       expect(result).toBe('http://localhost:3000/ghi789');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
       expect(mockUrlRepository.findOne).toHaveBeenNthCalledWith(1, {

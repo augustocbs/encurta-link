@@ -33,7 +33,9 @@ export class UrlService {
       throw new BadRequestException('URL com formato inválido.');
     }
 
-    const whereCondition: any = { originalUrl };
+    const whereCondition: { originalUrl: string; userId?: number } = {
+      originalUrl,
+    };
     if (userId) {
       whereCondition.userId = userId;
     }
@@ -90,11 +92,11 @@ export class UrlService {
   async redirectToOriginalUrl(shortCode: string): Promise<string> {
     this.logger.log(`Tentando redirecionar pelo código: ${shortCode}`);
     const url = await this.urlRepository.findOne({ where: { shortCode } });
-    
+
     if (!url) {
       throw new NotFoundException('URL encurtada não encontrada.');
     }
-    
+
     url.clicks = (url.clicks || 0) + 1;
     await this.urlRepository.save(url);
     this.logger.log(
