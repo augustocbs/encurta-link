@@ -29,36 +29,18 @@ export class UrlService {
 
     if (!this.isValidUrl(originalUrl)) {
       this.logger.warn(`Formato de URL inválido: ${originalUrl}`);
-      throw new BadRequestException('Invalid URL format.');
-    }
-
-    const existingUrl = await this.urlRepository.findOne({
-      where: { originalUrl },
-    });
-    if (existingUrl) {
-      const baseUrl = this.configService.get<string>('BASE_URL');
-      this.logger.log(
-        `URL encurtada com sucesso: ${existingUrl.shortCode} para ${originalUrl}`,
-      );
-      return `${baseUrl}/${existingUrl.shortCode}`;
+      throw new BadRequestException('URL com formato inválido.');
     }
 
     let shortCode: string = '';
     let isUnique = false;
-    const MAX_RETRIES = 10;
-    let retries = 0;
 
-    while (!isUnique && retries < MAX_RETRIES) {
+    while (!isUnique) {
       shortCode = this.generateShortCode();
       const found = await this.urlRepository.findOne({ where: { shortCode } });
       if (!found) {
         isUnique = true;
       }
-      retries++;
-    }
-
-    if (!isUnique) {
-      throw new ConflictException('Não foi possível gerar a url encurtada');
     }
 
     const urlData: Partial<Url> = {

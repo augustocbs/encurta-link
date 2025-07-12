@@ -25,7 +25,7 @@ export class Url {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ type: 'varchar', length: 767, unique: true, nullable: false })
+  @Column({ type: 'text', nullable: false })
   originalUrl: string;
 
   @Column({ type: 'varchar', length: 6, unique: true, nullable: false })

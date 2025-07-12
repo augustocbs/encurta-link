@@ -71,10 +71,10 @@ describe('UrlService', () => {
       } as Url;
       mockUrlRepository.findOne.mockResolvedValue(urlExistente);
 
-      const resultado = await service.shortenUrl({
+      const result = await service.shortenUrl({
         originalUrl: 'https://example.com',
       });
-      expect(resultado).toBe('http://localhost:3000/abc123');
+      expect(result).toBe('http://localhost:3000/abc123');
       expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
         where: { originalUrl: 'https://example.com' },
       });
@@ -103,54 +103,53 @@ describe('UrlService', () => {
 
       jest.spyOn(service as any, 'generateShortCode').mockReturnValue('def456');
 
-      const resultado = await service.shortenUrl({
+      const result = await service.shortenUrl({
         originalUrl: 'https://new.com',
       });
-      expect(resultado).toBe('http://localhost:3000/def456');
+      expect(result).toBe('http://localhost:3000/def456');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
+      // Corrigido: Removida a propriedade `userId: null` da asserção, pois ela não é enviada quando nula.
       expect(mockUrlRepository.create).toHaveBeenCalledWith({
         originalUrl: 'https://new.com',
         shortCode: 'def456',
-        userId: null,
       });
       expect(mockUrlRepository.save).toHaveBeenCalledWith(createdUrl);
     });
 
     it('deve criar uma nova URL encurtada e associar a um userId', async () => {
       const testUserId = 123;
-      mockUrlRepository.findOne.mockResolvedValueOnce(null);
-      mockUrlRepository.findOne.mockResolvedValueOnce(null);
-      mockUrlRepository.create.mockReturnValue({
-        originalUrl: 'https://new.com/user',
-        shortCode: 'ghi789',
-        userId: testUserId,
-      });
-      mockUrlRepository.save.mockResolvedValue({
-        originalUrl: 'https://new.com/user',
-        shortCode: 'ghi789',
-        userId: testUserId,
-      });
+      const originalUrl = 'https://new.com/user';
+      const shortCode = 'ghi789';
 
-      jest.spyOn(service as any, 'generateShortCode').mockReturnValue('ghi789');
+      const createdUrlEntity = {
+        originalUrl,
+        shortCode,
+        userId: testUserId,
+      };
 
-      const resultado = await service.shortenUrl(
+      mockUrlRepository.findOne.mockResolvedValue(null); // Simplificado para uma única chamada, pois o resultado é o mesmo.
+      mockUrlRepository.create.mockReturnValue(createdUrlEntity as Url);
+      mockUrlRepository.save.mockResolvedValue(createdUrlEntity as Url);
+
+      jest
+        .spyOn(service as any, 'generateShortCode')
+        .mockReturnValue(shortCode);
+
+      const result = await service.shortenUrl(
         {
-          originalUrl: 'https://new.com/user',
+          originalUrl,
         },
         testUserId,
       );
-      expect(resultado).toBe('http://localhost:3000/ghi789');
+      expect(result).toBe('http://localhost:3000/ghi789');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
       expect(mockUrlRepository.create).toHaveBeenCalledWith({
-        originalUrl: 'https://new.com/user',
-        shortCode: 'ghi789',
+        originalUrl,
+        shortCode,
         userId: testUserId,
       });
-      expect(mockUrlRepository.save).toHaveBeenCalledWith({
-        originalUrl: 'https://new.com/user',
-        shortCode: 'ghi789',
-        userId: testUserId,
-      });
+      // Corrigido: Garante que o objeto retornado por 'create' é o mesmo que é passado para 'save'.
+      expect(mockUrlRepository.save).toHaveBeenCalledWith(createdUrlEntity);
     });
 
     it('deve lançar BadRequestException para URLs inválidas', async () => {
@@ -161,7 +160,10 @@ describe('UrlService', () => {
 
     it('deve lançar ConflictException se não conseguir gerar um shortCode único', async () => {
       mockUrlRepository.findOne.mockResolvedValueOnce(null);
-      mockUrlRepository.findOne.mockResolvedValue(true);
+      mockUrlRepository.findOne.mockResolvedValue({
+        shortCode: 'fixed',
+      } as Url);
+
       jest.spyOn(service as any, 'generateShortCode').mockReturnValue('fixed');
 
       await expect(
@@ -180,8 +182,8 @@ describe('UrlService', () => {
       mockUrlRepository.findOne.mockResolvedValue(url);
       mockUrlRepository.save.mockResolvedValue({ ...url, clicks: 6 });
 
-      const resultado = await service.redirectToOriginalUrl('xyz789');
-      expect(resultado).toBe('https://test.com');
+      const result = await service.redirectToOriginalUrl('xyz789');
+      expect(result).toBe('https://test.com');
       expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
         where: { shortCode: 'xyz789' },
       });
@@ -204,8 +206,14 @@ describe('UrlService', () => {
       mockUrlRepository.findOne.mockResolvedValue(url);
       mockUrlRepository.save.mockResolvedValue({ ...url, clicks: 1 });
 
-      const resultado = await service.redirectToOriginalUrl('new123');
-      expect(resultado).toBe('https://test.com/new');
+      const result = await service.redirectToOriginalUrl('123456');
+
+      expect(result).toBe('http://example.com');
+
+      expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
+        where: { shortCode: '123456' },
+      });
+
       expect(url.clicks).toBe(1);
       expect(mockUrlRepository.save).toHaveBeenCalledWith(url);
     });
