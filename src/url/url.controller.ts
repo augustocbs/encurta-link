@@ -8,9 +8,13 @@ import {
   HttpStatus,
   UseGuards,
   Req,
+  Put,
+  Delete,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { UrlService } from './url.service';
 import { CreateUrlDto } from './dto/create-url.dto';
+import { UpdateUrlDto } from './dto/update-url.dto';
 import { Response, Request } from 'express';
 import {
   ApiTags,
@@ -19,16 +23,17 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
+import { OptionalJwtAuthGuard } from 'src/auth/guards/optional-jwt-auth.guard';
 
-@ApiTags('urls')
+@ApiTags('Urls')
 @Controller()
 export class UrlController {
   constructor(private readonly urlService: UrlService) {}
 
   @Post('shorten')
   @UseGuards(OptionalJwtAuthGuard)
-  @ApiBearerAuth('access-token')
+  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Encurta uma URL longa, opcionalmente associando-a a um usuário autenticado.',
@@ -76,5 +81,84 @@ export class UrlController {
         error instanceof Error ? error.message : 'URL não encontrada.';
       res.status(HttpStatus.NOT_FOUND).json({ message: errorMessage });
     }
+  }
+
+  @Get('')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Lista todas as URLs encurtadas pertencentes ao usuário autenticado.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de URLs do usuário.',
+  })
+  @ApiResponse({ status: 401, description: 'Não autorizado.' })
+  async getUrls(@Req() req: Request) {
+    const userId = (req.user as { id: number }).id;
+    return this.urlService.getUrlsByUserId(userId);
+  }
+
+  @Put(':id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Atualiza a URL original de uma URL encurtada específica.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'O ID da URL encurtada a ser atualizada.',
+    example: '123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'URL atualizada com sucesso.',
+  })
+  @ApiResponse({ status: 400, description: 'Formato de URL inválido.' })
+  @ApiResponse({ status: 401, description: 'Não autorizado.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Proibido (URL não pertence ao usuário).',
+  })
+  @ApiResponse({ status: 404, description: 'URL não encontrada.' })
+  async updateUrl(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUrlDto: UpdateUrlDto,
+    @Req() req: Request,
+  ) {
+    const userId = (req.user as { id: number }).id;
+    return this.urlService.updateUrl(id, updateUrlDto, userId);
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Realiza a exclusão lógica de uma URL encurtada específica.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'O ID da URL encurtada a ser excluída.',
+    example: '123',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'URL excluída logicamente com sucesso.',
+  })
+  @ApiResponse({ status: 401, description: 'Não autorizado.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Proibido (URL não pertence ao usuário).',
+  })
+  @ApiResponse({ status: 404, description: 'URL não encontrada.' })
+  async deleteUrl(
+    @Param('id') id: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const userId = (req.user as { id: number }).id;
+    await this.urlService.softDeleteUrl(id, userId);
+    res.status(HttpStatus.NO_CONTENT).send();
   }
 }
