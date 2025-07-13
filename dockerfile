@@ -16,7 +16,7 @@ RUN npm install
 COPY . .
 
 # Exponha a porta que a aplicação usa
-EXPOSE 3000
+EXPOSE 80
 
 # O comando padrão (será sobrescrito pelo docker-compose em desenvolvimento)
 CMD [ "npm", "run", "start:prod" ]

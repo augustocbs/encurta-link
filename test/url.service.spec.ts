@@ -1,18 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Url } from 'src/url/entities/url.entity';
 import { UrlService } from 'src/url/url.service';
 import { User } from 'src/users/entities/user.entity';
+import { UpdateUrlDto } from 'src/url/dto/update-url.dto';
 
 const mockUrlRepository = {
   findOne: jest.fn(),
+  find: jest.fn(),
   create: jest.fn(),
   save: jest.fn(),
 };
@@ -20,7 +23,7 @@ const mockUrlRepository = {
 const mockConfigService = {
   get: jest.fn((chave: string) => {
     if (chave === 'BASE_URL') {
-      return 'http://localhost:3000';
+      return 'http://localhost';
     }
     return undefined;
   }),
@@ -52,6 +55,7 @@ describe('UrlService', () => {
   afterEach(() => {
     jest.restoreAllMocks();
     mockUrlRepository.findOne.mockReset();
+    mockUrlRepository.find.mockReset();
     mockUrlRepository.create.mockReset();
     mockUrlRepository.save.mockReset();
   });
@@ -78,7 +82,7 @@ describe('UrlService', () => {
         originalUrl: 'https://example.com',
       });
 
-      expect(result).toBe('http://localhost:3000/abc123');
+      expect(result).toBe('http://localhost/abc123');
       expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
         where: { originalUrl: 'https://example.com' },
       });
@@ -111,7 +115,7 @@ describe('UrlService', () => {
         originalUrl: 'https://new.com',
       });
 
-      expect(result).toBe('http://localhost:3000/def456');
+      expect(result).toBe('http://localhost/def456');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
       expect(mockUrlRepository.create).toHaveBeenCalledWith({
         originalUrl: 'https://new.com',
@@ -154,7 +158,7 @@ describe('UrlService', () => {
         testUserId,
       );
 
-      expect(result).toBe('http://localhost:3000/ghi789');
+      expect(result).toBe('http://localhost/ghi789');
       expect(mockUrlRepository.findOne).toHaveBeenCalledTimes(2);
       expect(mockUrlRepository.findOne).toHaveBeenNthCalledWith(1, {
         where: { originalUrl, userId: testUserId },
@@ -240,6 +244,235 @@ describe('UrlService', () => {
       await expect(service.redirectToOriginalUrl('nao-existe')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('getUrlsByUserId (buscar URLs por usuário)', () => {
+    it('deve retornar lista de URLs do usuário', async () => {
+      const userId = 123;
+      const mockUrls: Url[] = [
+        {
+          id: 1,
+          originalUrl: 'https://example1.com',
+          shortCode: 'abc123',
+          clicks: 5,
+          userId: 123,
+          user: new User(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: undefined,
+        },
+        {
+          id: 2,
+          originalUrl: 'https://example2.com',
+          shortCode: 'def456',
+          clicks: 10,
+          userId: 123,
+          user: new User(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: undefined,
+        },
+      ];
+
+      mockUrlRepository.find.mockResolvedValue(mockUrls);
+
+      const result = await service.getUrlsByUserId(userId);
+
+      expect(result).toEqual(mockUrls);
+      expect(mockUrlRepository.find).toHaveBeenCalledWith({
+        where: {
+          userId: userId,
+          deletedAt: IsNull(),
+        },
+        select: ['originalUrl', 'shortCode', 'clicks'],
+      });
+    });
+
+    it('deve retornar lista vazia quando usuário não tem URLs', async () => {
+      const userId = 123;
+      mockUrlRepository.find.mockResolvedValue([]);
+
+      const result = await service.getUrlsByUserId(userId);
+
+      expect(result).toEqual([]);
+      expect(mockUrlRepository.find).toHaveBeenCalledWith({
+        where: {
+          userId: userId,
+          deletedAt: IsNull(),
+        },
+        select: ['originalUrl', 'shortCode', 'clicks'],
+      });
+    });
+  });
+
+  describe('updateUrl (atualizar URL)', () => {
+    it('deve atualizar uma URL com sucesso', async () => {
+      const urlId = 1;
+      const userId = 123;
+      const updateUrlDto: UpdateUrlDto = {
+        originalUrl: 'https://updated-example.com',
+      };
+
+      const existingUrl: Url = {
+        id: urlId,
+        originalUrl: 'https://old-example.com',
+        shortCode: 'abc123',
+        clicks: 5,
+        userId: userId,
+        user: new User(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+      };
+
+      const updatedUrl: Url = {
+        ...existingUrl,
+        originalUrl: updateUrlDto.originalUrl,
+        updatedAt: new Date(),
+      };
+
+      mockUrlRepository.findOne.mockResolvedValue(existingUrl);
+      mockUrlRepository.save.mockResolvedValue(updatedUrl);
+
+      const result = await service.updateUrl(urlId, updateUrlDto, userId);
+
+      expect(result).toEqual(updatedUrl);
+      expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
+        where: { id: urlId },
+      });
+      expect(mockUrlRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          originalUrl: updateUrlDto.originalUrl,
+        }),
+      );
+    });
+
+    it('deve lançar NotFoundException quando URL não for encontrada', async () => {
+      const urlId = 999;
+      const userId = 123;
+      const updateUrlDto: UpdateUrlDto = {
+        originalUrl: 'https://updated-example.com',
+      };
+
+      mockUrlRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.updateUrl(urlId, updateUrlDto, userId))
+        .rejects.toThrow(NotFoundException);
+
+      expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
+        where: { id: urlId },
+      });
+    });
+
+    it('deve lançar ForbiddenException quando usuário não é dono da URL', async () => {
+      const urlId = 1;
+      const userId = 123;
+      const updateUrlDto: UpdateUrlDto = {
+        originalUrl: 'https://updated-example.com',
+      };
+
+      const existingUrl: Url = {
+        id: urlId,
+        originalUrl: 'https://old-example.com',
+        shortCode: 'abc123',
+        clicks: 5,
+        userId: 456,
+        user: new User(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+      };
+
+      mockUrlRepository.findOne.mockResolvedValue(existingUrl);
+
+      await expect(service.updateUrl(urlId, updateUrlDto, userId))
+        .rejects.toThrow(ForbiddenException);
+    });
+
+    it('deve lançar BadRequestException para URL inválida', async () => {
+      const urlId = 1;
+      const userId = 123;
+      const updateUrlDto: UpdateUrlDto = {
+        originalUrl: 'url-invalida',
+      };
+
+      await expect(service.updateUrl(urlId, updateUrlDto, userId))
+        .rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('softDeleteUrl (exclusão lógica)', () => {
+    it('deve excluir uma URL logicamente com sucesso', async () => {
+      const urlId = 1;
+      const userId = 123;
+
+      const existingUrl: Url = {
+        id: urlId,
+        originalUrl: 'https://example.com',
+        shortCode: 'abc123',
+        clicks: 5,
+        userId: userId,
+        user: new User(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+      };
+
+      const deletedUrl: Url = {
+        ...existingUrl,
+        deletedAt: new Date(),
+      };
+
+      mockUrlRepository.findOne.mockResolvedValue(existingUrl);
+      mockUrlRepository.save.mockResolvedValue(deletedUrl);
+
+      await service.softDeleteUrl(urlId, userId);
+
+      expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
+        where: { id: urlId },
+      });
+      expect(mockUrlRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deletedAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it('deve lançar NotFoundException quando URL não for encontrada', async () => {
+      const urlId = 999;
+      const userId = 123;
+
+      mockUrlRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.softDeleteUrl(urlId, userId))
+        .rejects.toThrow(NotFoundException);
+
+      expect(mockUrlRepository.findOne).toHaveBeenCalledWith({
+        where: { id: urlId },
+      });
+    });
+
+    it('deve lançar ForbiddenException quando usuário não é dono da URL', async () => {
+      const urlId = 1;
+      const userId = 123;
+
+      const existingUrl: Url = {
+        id: urlId,
+        originalUrl: 'https://example.com',
+        shortCode: 'abc123',
+        clicks: 5,
+        userId: 456, 
+        user: new User(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: undefined,
+      };
+
+      mockUrlRepository.findOne.mockResolvedValue(existingUrl);
+
+      await expect(service.softDeleteUrl(urlId, userId))
+        .rejects.toThrow(ForbiddenException);
     });
   });
 });
