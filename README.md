@@ -1,6 +1,6 @@
 # Encurtador de URL (Release 0.2.0 - Autenticação)
 
-Este projeto é um serviço de encurtamento de URLs construído com NestJS, TypeScript e TypeORM, utilizando MySQL como banco de dados. A aplicação é conteinerizada com Docker e Docker Compose.
+Este projeto é um serviço de encurtamento de URLs construído com NestJS, TypeScript e TypeORM, utilizando PostgreSQL como banco de dados. A aplicação é conteinerizada com Docker e Docker Compose.
 
 ## Funcionalidades da Release 0.2.0
 
@@ -27,7 +27,7 @@ Este projeto é um serviço de encurtamento de URLs construído com NestJS, Type
 *   **Backend:** Node.js, NestJS, TypeScript
 *   **Autenticação:** JWT, Bcrypt, Passport.js
 *   **ORM:** TypeORM
-*   **Banco de Dados:** MySQL
+*   **Banco de Dados:** PostgreSQL
 *   **Conteinerização:** Docker, Docker Compose
 *   **Testes:** Jest
 *   **Documentação API:** Swagger (OpenAPI)
@@ -49,14 +49,15 @@ Este projeto é um serviço de encurtamento de URLs construído com NestJS, Type
     ```
 
 2.  **Crie o arquivo de variáveis de ambiente:**
-    Na raiz do projeto, crie um arquivo `.env` e preencha com suas credenciais do MySQL, a URL base da aplicação e o **segredo JWT**:
+    Na raiz do projeto, crie um arquivo `.env` e preencha com suas credenciais do PostgreSQL, a URL base da aplicação e o **segredo JWT**:
     O projeto já possui um .env.example com informações padrão para ser utilizado.
     ```bash
     cp .env.example .env
     ```
     **Importante:**
-    *   O `DB_HOST` deve ser `db` quando rodando com Docker Compose, pois `db` é o nome do serviço do MySQL no `docker-compose.yml`.
+    *   O `DB_HOST` deve ser `db` quando rodando com Docker Compose, pois `db` é o nome do serviço do PostgreSQL no `docker-compose.yml`.
     *   Certifique-se de adicionar a variável `JWT_SECRET` com uma string longa e aleatória.
+    *   O `DB_PORT` padrão do PostgreSQL é 5432.
 
     Exemplo de `.env` em `.env.example`:
 
@@ -245,3 +246,4 @@ Para rodar os testes unitários:
 
 ```bash
 docker compose exec app npm run test
+```
