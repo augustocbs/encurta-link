@@ -19,6 +19,7 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { ApiTags, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { UserProfileDto } from 'src/users/dto/user-profile.dto';
 
 interface AuthenticatedRequest extends ExpressRequest {
   user: User;
@@ -104,14 +105,18 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Dados do perfil do usuário.',
-    type: User,
+    type: UserProfileDto,
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: 'Não autorizado.',
   })
-  getProfile(@Request() req: AuthenticatedRequest) {
-    const { password, ...result } = req.user;
-    return result;
+  getProfile(@Request() req: AuthenticatedRequest): UserProfileDto {
+    const userProfile: UserProfileDto = {
+      id: req.user.id,
+      email: req.user.email,
+    };
+
+    return userProfile;
   }
 }

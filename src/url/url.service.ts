@@ -25,7 +25,7 @@ export class UrlService {
 
   async shortenUrl(
     createUrlDto: CreateUrlDto,
-    userId?: number, 
+    userId?: number,
   ): Promise<string> {
     const { originalUrl } = createUrlDto;
     this.logger.log(`Tentando encurtar URL: ${originalUrl}`);
@@ -45,11 +45,13 @@ export class UrlService {
       for (const existingUrl of existingUrls) {
         if (existingUrl.userId === null && userId === undefined) {
           urlToReuse = existingUrl;
-          break; 
-        }
-        else if (existingUrl.userId !== null && existingUrl.userId === userId) {
+          break;
+        } else if (
+          existingUrl.userId !== null &&
+          existingUrl.userId === userId
+        ) {
           urlToReuse = existingUrl;
-          break; 
+          break;
         }
       }
     }

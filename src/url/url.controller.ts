@@ -8,7 +8,7 @@ import {
   HttpStatus,
   UseGuards,
   Req,
-  Put, 
+  Put,
   Delete,
   ParseIntPipe,
 } from '@nestjs/common';
@@ -36,7 +36,7 @@ export class UrlController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-    'Encurta uma URL longa, opcionalmente associando-a a um usuário autenticado.',
+      'Encurta uma URL longa, opcionalmente associando-a a um usuário autenticado.',
   })
   @ApiResponse({
     status: 201,
@@ -83,11 +83,12 @@ export class UrlController {
     }
   }
 
-  @Get('') 
-  @UseGuards(AuthGuard('jwt')) 
+  @Get('')
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Lista todas as URLs encurtadas pertencentes ao usuário autenticado.',
+    summary:
+      'Lista todas as URLs encurtadas pertencentes ao usuário autenticado.',
   })
   @ApiResponse({
     status: 200,
@@ -95,7 +96,7 @@ export class UrlController {
   })
   @ApiResponse({ status: 401, description: 'Não autorizado.' })
   async getUrls(@Req() req: Request) {
-    const userId = (req.user as { id: number }).id; 
+    const userId = (req.user as { id: number }).id;
     return this.urlService.getUrlsByUserId(userId);
   }
 
@@ -116,10 +117,13 @@ export class UrlController {
   })
   @ApiResponse({ status: 400, description: 'Formato de URL inválido.' })
   @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 403, description: 'Proibido (URL não pertence ao usuário).' })
+  @ApiResponse({
+    status: 403,
+    description: 'Proibido (URL não pertence ao usuário).',
+  })
   @ApiResponse({ status: 404, description: 'URL não encontrada.' })
   async updateUrl(
-    @Param('id', ParseIntPipe) id: number, 
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateUrlDto: UpdateUrlDto,
     @Req() req: Request,
   ) {
@@ -143,15 +147,18 @@ export class UrlController {
     description: 'URL excluída logicamente com sucesso.',
   })
   @ApiResponse({ status: 401, description: 'Não autorizado.' })
-  @ApiResponse({ status: 403, description: 'Proibido (URL não pertence ao usuário).' })
+  @ApiResponse({
+    status: 403,
+    description: 'Proibido (URL não pertence ao usuário).',
+  })
   @ApiResponse({ status: 404, description: 'URL não encontrada.' })
   async deleteUrl(
     @Param('id') id: number,
-    @Req() req: Request, 
-    @Res() res: Response
+    @Req() req: Request,
+    @Res() res: Response,
   ) {
     const userId = (req.user as { id: number }).id;
     await this.urlService.softDeleteUrl(id, userId);
-    res.status(HttpStatus.NO_CONTENT).send(); 
+    res.status(HttpStatus.NO_CONTENT).send();
   }
 }
