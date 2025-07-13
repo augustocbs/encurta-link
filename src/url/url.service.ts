@@ -4,12 +4,14 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Url } from './entities/url.entity';
 import { CreateUrlDto } from './dto/create-url.dto';
 import { ConfigService } from '@nestjs/config';
+import { UpdateUrlDto } from './dto/update-url.dto';
 
 @Injectable()
 export class UrlService {
@@ -33,24 +35,38 @@ export class UrlService {
       throw new BadRequestException('URL com formato inválido.');
     }
 
-    const whereCondition: { originalUrl: string; userId?: number } = {
-      originalUrl,
-    };
-    if (userId) {
-      whereCondition.userId = userId;
-    }
-
-    const existingUrl = await this.urlRepository.findOne({
-      where: whereCondition,
+    const existingUrls = await this.urlRepository.find({
+      where: { originalUrl },
     });
 
-    if (existingUrl) {
+    let urlToReuse: Url | null = null;
+
+    if (existingUrls.length > 0) {
+      for (const existingUrl of existingUrls) {
+        if (existingUrl.userId === null && userId === undefined) {
+          urlToReuse = existingUrl;
+          break;
+        } else if (
+          existingUrl.userId !== null &&
+          existingUrl.userId === userId
+        ) {
+          urlToReuse = existingUrl;
+          break;
+        }
+      }
+    }
+
+    if (urlToReuse) {
       const baseUrl = this.configService.get<string>('BASE_URL');
       this.logger.log(
-        `URL já existe: ${existingUrl.shortCode} para ${originalUrl}`,
+        `URL existente encontrada e reutilizada: ${urlToReuse.shortCode} para ${originalUrl}`,
       );
-      return `${baseUrl}/${existingUrl.shortCode}`;
+      return `${baseUrl}/${urlToReuse.shortCode}`;
     }
+
+    this.logger.log(
+      `Nenhuma URL existente adequada encontrada para reuso. Criando nova URL.`,
+    );
 
     let shortCode: string = '';
     let isUnique = false;
@@ -103,6 +119,85 @@ export class UrlService {
       `Redirecionado ${shortCode} para ${url.originalUrl}. Clicks: ${url.clicks}`,
     );
     return url.originalUrl;
+  }
+
+  async getUrlsByUserId(userId: number): Promise<Url[]> {
+    this.logger.log(`Buscando URLs para o usuário: ${userId}`);
+    const urls = await this.urlRepository.find({
+      where: {
+        userId: userId,
+        deletedAt: IsNull(),
+      },
+      select: ['originalUrl', 'shortCode', 'clicks'],
+    });
+    this.logger.log(`Encontradas ${urls.length} URLs para o usuário ${userId}`);
+    return urls;
+  }
+
+  async updateUrl(
+    id: number,
+    updateUrlDto: UpdateUrlDto,
+    userId: number,
+  ): Promise<Url> {
+    const { originalUrl } = updateUrlDto;
+    this.logger.log(
+      `Tentando atualizar URL ${id} para ${originalUrl} pelo usuário ${userId}`,
+    );
+
+    if (!this.isValidUrl(originalUrl)) {
+      this.logger.warn(
+        `Formato de URL inválido para atualização: ${originalUrl}`,
+      );
+      throw new BadRequestException('Nova URL com formato inválido.');
+    }
+
+    const url = await this.urlRepository.findOne({ where: { id } });
+
+    if (!url) {
+      this.logger.warn(`URL com ID ${id} não encontrada para atualização.`);
+      throw new NotFoundException('URL não encontrada.');
+    }
+
+    if (url.userId !== userId) {
+      this.logger.warn(
+        `Usuário ${userId} tentou atualizar URL ${id} que não lhe pertence.`,
+      );
+      throw new ForbiddenException(
+        'Você não tem permissão para atualizar esta URL.',
+      );
+    }
+
+    url.originalUrl = originalUrl;
+    url.updatedAt = new Date();
+    const updatedUrl = await this.urlRepository.save(url);
+    this.logger.log(`URL ${id} atualizada com sucesso.`);
+    return updatedUrl;
+  }
+
+  async softDeleteUrl(id: number, userId: number): Promise<void> {
+    this.logger.log(
+      `Tentando exclusão lógica da URL ${id} pelo usuário ${userId}`,
+    );
+
+    const url = await this.urlRepository.findOne({ where: { id } });
+
+    if (!url) {
+      this.logger.warn(`URL com ID ${id} não encontrada para exclusão.`);
+      throw new NotFoundException('URL não encontrada.');
+    }
+
+    if (url.userId !== userId) {
+      this.logger.warn(
+        `Usuário ${userId} tentou excluir URL ${id} que não lhe pertence.`,
+      );
+      throw new ForbiddenException(
+        'Você não tem permissão para excluir esta URL.',
+      );
+    }
+
+    url.deletedAt = new Date();
+    await this.urlRepository.save(url);
+    this.logger.log(`URL ${id} excluída logicamente com sucesso.`);
   }
 
   private generateShortCode(): string {

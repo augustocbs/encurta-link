@@ -17,12 +17,12 @@ async function bootstrap() {
     .setTitle('Encurtador de URL API')
     .setDescription('API para encurtar e redirecionar URLs')
     .setVersion('0.1.0')
-    .addTag('urls')
+    .addTag('Urls')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
+  await app.listen(80);
 }
 bootstrap().catch((err) => console.error(err));
