@@ -33,6 +33,21 @@ Este projeto é um serviço de encurtamento de URLs construído com NestJS, Type
 *   **Documentação API:** Swagger (OpenAPI)
 *   **Logs:** Winston
 
+## Ambiente de Produção
+
+A API está disponível para testes em produção através do endpoint:
+```
+https://encurtador-api.onrender.com/
+```
+
+Você pode:
+- Acessar a documentação Swagger em: `https://encurtador-api.onrender.com/api`
+- Testar o encurtamento de URLs sem autenticação
+- Criar uma conta e gerenciar suas URLs encurtadas
+- Usar todos os endpoints descritos acima, apenas substituindo `http://localhost` por `https://encurtador-api.onrender.com`
+
+**Nota:** Por estar hospedado em um plano gratuito do Render, o primeiro acesso pode levar alguns segundos para responder enquanto o serviço é inicializado.
+
 ## Como Rodar o Projeto
 
 ### Pré-requisitos
