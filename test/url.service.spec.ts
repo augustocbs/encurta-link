@@ -70,7 +70,6 @@ describe('UrlService', () => {
 
   describe('shortenUrl (encurtar URL)', () => {
     it('deve retornar uma URL encurtada existente se originalUrl já existir (usuário anônimo)', async () => {
-      // Fixed: Removed 'as any' and properly typed the object
       const urlExistente: Url = {
         id: 1,
         originalUrl: 'https://example.com',
