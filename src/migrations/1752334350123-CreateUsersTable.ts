@@ -5,27 +5,37 @@ export class CreateUsersTable1752334350123 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `CREATE TABLE \`urls\` (\`id\` int NOT NULL AUTO_INCREMENT, \`userId\` int NULL, \`originalUrl\` text NOT NULL, \`shortCode\` varchar(6) NOT NULL, \`clicks\` int NOT NULL DEFAULT '0', \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`deletedAt\` datetime(6) NULL, UNIQUE INDEX \`IDX_34ced802e4a45bf6a6346f2eb9\` (\`shortCode\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`,
+      `CREATE TABLE "urls" (
+        "id" SERIAL PRIMARY KEY,
+        "userId" integer,
+        "originalUrl" text NOT NULL,
+        "shortCode" varchar(6) NOT NULL,
+        "clicks" integer NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "deletedAt" TIMESTAMP(6),
+        CONSTRAINT "UQ_shortCode" UNIQUE ("shortCode")
+      )`,
     );
     await queryRunner.query(
-      `CREATE TABLE \`users\` (\`id\` int NOT NULL AUTO_INCREMENT, \`email\` varchar(255) NOT NULL, \`password\` varchar(255) NOT NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`deleted_at\` datetime(6) NULL, UNIQUE INDEX \`IDX_97672ac88f789774dd47f7c8be\` (\`email\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`,
+      `CREATE TABLE "users" (
+        "id" SERIAL PRIMARY KEY,
+        "email" varchar(255) NOT NULL,
+        "password" varchar(255) NOT NULL,
+        "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "deleted_at" TIMESTAMP(6),
+        CONSTRAINT "UQ_email" UNIQUE ("email")
+      )`,
     );
     await queryRunner.query(
-      `ALTER TABLE \`urls\` ADD CONSTRAINT \`FK_3088b58113241e3f5f6c10cf1fb\` FOREIGN KEY (\`userId\`) REFERENCES \`users\`(\`id\`) ON DELETE SET NULL ON UPDATE NO ACTION`,
+      `ALTER TABLE "urls" ADD CONSTRAINT "FK_user_url" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE \`urls\` DROP FOREIGN KEY \`FK_3088b58113241e3f5f6c10cf1fb\``,
-    );
-    await queryRunner.query(
-      `DROP INDEX \`IDX_97672ac88f789774dd47f7c8be\` ON \`users\``,
-    );
-    await queryRunner.query(`DROP TABLE \`users\``);
-    await queryRunner.query(
-      `DROP INDEX \`IDX_34ced802e4a45bf6a6346f2eb9\` ON \`urls\``,
-    );
-    await queryRunner.query(`DROP TABLE \`urls\``);
+    await queryRunner.query(`ALTER TABLE "urls" DROP CONSTRAINT "FK_user_url"`);
+    await queryRunner.query(`DROP TABLE "users"`);
+    await queryRunner.query(`DROP TABLE "urls"`);
   }
 }
