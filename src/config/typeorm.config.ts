@@ -2,7 +2,6 @@ import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity';
 import { Url } from '../url/entities/url.entity';
-import * as dotenv from 'dotenv';
 
 export const createTypeOrmConfig = (configService: ConfigService) => {
   const dbHost = configService.get<string>('DB_HOST');
