@@ -4,6 +4,22 @@ import { User } from '../users/entities/user.entity';
 import { Url } from '../url/entities/url.entity';
 
 export const createTypeOrmConfig = (configService: ConfigService) => {
+  const databaseUrl = configService.get<string>('DATABASE_URL');
+
+  if (databaseUrl) {
+    return {
+      type: 'postgres' as const,
+      url: databaseUrl,
+      entities: [User, Url],
+      synchronize: false,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+      migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+      migrationsTableName: 'migrations',
+    };
+  }
+
   const dbHost = configService.get<string>('DB_HOST');
   const dbPort = configService.get<string>('DB_PORT');
   const dbUsername = configService.get<string>('DB_USERNAME');

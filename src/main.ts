@@ -5,6 +5,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const PORT = process.env.PORT || 80;
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -23,6 +25,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(80);
+  await app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+  });
 }
 bootstrap().catch((err) => console.error(err));
