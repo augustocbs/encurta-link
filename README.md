@@ -247,3 +247,7 @@ Para rodar os testes unitários:
 ```bash
 docker compose exec app npm run test
 ```
+
+### Desenvolvimento Local com Docker
+
+Para desenvolvimento local, você pode ignorar a variável `DATABASE_URL` e usar as variáveis individuais do banco de dados (`DB_HOST`, `DB_PORT`, etc.) conforme descrito na seção de Configuração
